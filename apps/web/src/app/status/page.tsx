@@ -212,7 +212,8 @@ function NodeCard({ node, now }: { node: Doc<'nodes'>; now: number }) {
 
       {node.type === 'gateway' && node.shards && (
         <div className='pt-3 border-t border-neutral-800'>
-          <div className='flex flex-wrap gap-1'>
+          <span className='text-neutral-400 text-xs'>Shard IDs:</span>
+          <div className='flex flex-wrap gap-1 pt-2'>
             {node.shards.map((s: number) => (
               <div
                 key={s}
