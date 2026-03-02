@@ -1,7 +1,9 @@
 'use client';
 
-import { Doc, api } from '@yanera/database';
+import { api, Doc } from '@yanera/database';
 import { useQuery } from 'convex/react';
+import { useEffect, useState } from 'react';
+
 import {
   ActivityIcon,
   BoxIcon,
@@ -9,19 +11,23 @@ import {
   ClockIcon,
   GlobeIcon,
   GlobeOffIcon,
+  HardDriveIcon,
   MemoryStickIcon,
   RadioIcon,
   ServerIcon,
   SignalIcon,
   WaypointsIcon,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 function getNodeStatus(lastHeartbeat: number, now: number) {
   const diff = now - lastHeartbeat;
-  if (diff > 30_000) return { label: 'Offline', color: 'bg-red-500/10 text-red-500 border-red-500/20' };
-  if (diff > 20_000) return { label: 'Dying', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' };
-  return { label: 'Online', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' };
+  if (diff > 30_000) return 'offline';
+  if (diff > 20_000) return 'unresponsive';
+  return 'online';
 }
 
 function formatDuration(ms: number) {
@@ -42,11 +48,21 @@ function formatDuration(ms: number) {
 
 export default function StatusPage() {
   const nodes = useQuery(api.nodes.getAll);
-
   const [now, setNow] = useState(() => Date.now());
 
+  // Mock data heartbeat simulation
+  // const [nodes, setNodes] = useState<typeof mockData>(mockData);
   useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000);
+    const interval = setInterval(() => {
+      setNow(Date.now());
+      // Simulate heartbeats for mock data
+      // setNodes((prev) =>
+      //   prev.map((node) => ({
+      //     ...node,
+      //     lastHeartbeat: node.lastHeartbeat + 1000, // Simulate heartbeats every second
+      //   })),
+      // );
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -55,6 +71,12 @@ export default function StatusPage() {
   const gateways = nodes.filter((n) => n.type === 'gateway');
   const gatewaysWithPing = gateways.filter((g) => g.shardData && g.shardData.some((s) => s.ping > 0));
   const workers = nodes.filter((n) => n.type === 'worker');
+
+  const totalGuilds = gateways.reduce((sum, node) => sum + (node.shardData?.reduce((s, shard) => s + shard.activeGuildIds.length, 0) || 0), 0);
+  const totalUnavailableGuilds = gateways.reduce((sum, node) => sum + (node.shardData?.reduce((s, shard) => s + shard.unavailableGuildIds.length, 0) || 0), 0);
+  const globalEps = workers.reduce((sum, node) => sum + (node.eventsPerSecond || 0), 0);
+  const totalEventsProcessed = workers.reduce((sum, node) => sum + (node.totalEvents || 0), 0);
+  const totalMemory = nodes.reduce((sum, node) => sum + node.memoryUsage, 0);
 
   const groupByHost = (items: typeof nodes) => {
     return items.reduce(
@@ -68,108 +90,163 @@ export default function StatusPage() {
   };
 
   return (
-    <div className='p-8 max-w-7xl mx-auto space-y-12'>
+    <main className='container mx-auto flex flex-col gap-8 p-4'>
       <header>
         <h1 className='text-3xl font-bold tracking-tight'>System Status</h1>
-        <p className='text-neutral-500 mt-2'>Real-time health of the Yanera distributed network.</p>
+        <p className='text-muted-foreground mt-2'>Real-time health of the Yanera distributed network.</p>
       </header>
 
       {/* --- SUMMARY SECTION --- */}
-      <section className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2'>
-        {/* Total Hosts */}
-        <div className='border rounded-xl bg-card p-6 shadow-sm border-neutral-800 flex items-center gap-4'>
-          <ServerIcon className='w-6 h-6 text-neutral-400' />
-          <div>
-            <p className='text-sm text-neutral-500'>Total Hosts</p>
-            <p className='text-xl font-bold font-mono'>
-              {Object.keys(groupByHost(nodes)).length > 0 ? Object.keys(groupByHost(nodes)).length.toLocaleString() : 'N/A'}
-            </p>
-          </div>
-        </div>
-        <div className='border rounded-xl bg-card p-6 shadow-sm border-neutral-800 flex items-center gap-4'>
-          <WaypointsIcon className='w-6 h-6 text-blue-500' />
-          <div>
-            <p className='text-sm text-neutral-500'>Total Gateways</p>
-            <p className='text-xl font-bold font-mono'>{gateways.length > 0 ? gateways.length.toLocaleString() : 'N/A'}</p>
-          </div>
-        </div>
-        <div className='border rounded-xl bg-card p-6 shadow-sm border-neutral-800 flex items-center gap-4'>
-          <BoxIcon className='w-6 h-6 text-purple-500' />
-          <div>
-            <p className='text-sm text-neutral-500'>Total Workers</p>
-            <p className='text-xl font-bold font-mono'>{workers.length > 0 ? workers.length.toLocaleString() : 'N/A'}</p>
-          </div>
-        </div>
-        <div className='border rounded-xl bg-card p-6 shadow-sm border-neutral-800 flex items-center gap-4'>
-          <SignalIcon className='w-6 h-6 text-yellow-500' />
-          <div>
-            <p className='text-sm text-neutral-500'>Average Latency</p>
-            <p className='text-xl font-bold font-mono'>
-              {gatewaysWithPing.length > 0
-                ? `${Math.round(gatewaysWithPing.reduce((sum, n) => sum + (n.shardData?.reduce((s, shard) => s + shard.ping, 0) || 0), 0) / (gatewaysWithPing.reduce((sum, n) => sum + (n.shardData?.length || 0), 0) || 1)).toLocaleString()} ms`
-                : 'N/A'}
-            </p>
-          </div>
-        </div>
-        <div className='border rounded-xl bg-card p-6 shadow-sm border-neutral-800 flex items-center gap-4'>
-          <MemoryStickIcon className='w-6 h-6 text-emerald-500' />
-          <div>
-            <p className='text-sm text-neutral-500'>Average Memory</p>
-            <p className='text-xl font-bold font-mono'>
-              {nodes.length > 0 ? `${Math.round(nodes.reduce((sum, n) => sum + n.memoryUsage, 0) / nodes.length).toLocaleString()} MB` : 'N/A'}
-            </p>
-          </div>
-        </div>
+      <section className='grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5'>
+        <Card>
+          <CardHeader className='flex items-center gap-4'>
+            <ServerIcon className='text-muted-foreground size-6 shrink-0' />
+            <div>
+              <CardDescription className='text-sm'>Total Hosts</CardDescription>
+              <CardTitle className='font-mono text-xl font-bold'>
+                {Object.keys(groupByHost(nodes)).length > 0 ? Object.keys(groupByHost(nodes)).length.toLocaleString() : 'N/A'}
+              </CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className='flex items-center gap-4'>
+            <WaypointsIcon className='size-6 shrink-0 text-blue-500' />
+            <div>
+              <CardDescription className='text-sm'>Total Gateways</CardDescription>
+              <CardTitle className='font-mono text-xl font-bold'>{gateways.length > 0 ? gateways.length.toLocaleString() : 'N/A'}</CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className='flex items-center gap-4'>
+            <BoxIcon className='size-6 shrink-0 text-purple-500' />
+            <div>
+              <CardDescription className='text-sm'>Total Workers</CardDescription>
+              <CardTitle className='font-mono text-xl font-bold'>{workers.length > 0 ? workers.length.toLocaleString() : 'N/A'}</CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className='flex items-center gap-4'>
+            <MemoryStickIcon className='size-6 shrink-0 text-emerald-500' />
+            <div>
+              <CardDescription className='text-sm'>Average Memory</CardDescription>
+              <CardTitle className='font-mono text-xl font-bold'>
+                {nodes.length > 0 ? `${Math.round(nodes.reduce((sum, n) => sum + n.memoryUsage, 0) / nodes.length).toLocaleString()} MB` : 'N/A'}
+              </CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className='flex items-center gap-4'>
+            <HardDriveIcon className='size-6 shrink-0 text-cyan-500' />
+            <div>
+              <CardDescription className='text-sm'>Total Memory</CardDescription>
+              <CardTitle className='font-mono text-xl font-bold'>{(totalMemory / 1024).toFixed(2)} GB</CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className='flex items-center gap-4'>
+            <SignalIcon className='size-6 shrink-0 text-yellow-500' />
+            <div>
+              <CardDescription className='text-sm'>Average Latency</CardDescription>
+              <CardTitle className='font-mono text-xl font-bold'>
+                {gatewaysWithPing.length > 0
+                  ? `${Math.round(gatewaysWithPing.reduce((sum, n) => sum + (n.shardData?.reduce((s, shard) => s + shard.ping, 0) || 0), 0) / (gatewaysWithPing.reduce((sum, n) => sum + (n.shardData?.length || 0), 0) || 1)).toLocaleString()} ms`
+                  : 'N/A'}
+              </CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className='flex items-center gap-4'>
+            <ChartBarIcon className='size-6 shrink-0 text-pink-500' />
+            <div>
+              <CardDescription className='text-sm'>Events Processed</CardDescription>
+              <CardTitle className='font-mono text-xl font-bold'>{totalEventsProcessed.toLocaleString()}</CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className='flex items-center gap-4'>
+            <RadioIcon className='size-6 shrink-0 text-orange-500' />
+            <div>
+              <CardDescription className='text-sm'>Global Throughput</CardDescription>
+              <CardTitle className='font-mono text-xl font-bold'>{globalEps > 0 ? `${globalEps.toFixed(2)} / s` : '0 / s'}</CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className='flex items-center gap-4'>
+            <GlobeIcon className='size-6 shrink-0 text-indigo-500' />
+            <div>
+              <CardDescription className='text-sm'>Total Guilds</CardDescription>
+              <CardTitle className='font-mono text-xl font-bold'>{totalGuilds > 0 ? totalGuilds.toLocaleString() : 'N/A'}</CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className='flex items-center gap-4'>
+            <GlobeOffIcon className='size-6 shrink-0 text-rose-500' />
+            <div>
+              <CardDescription className='text-sm'>Unavailable Guilds</CardDescription>
+              <CardTitle className='font-mono text-xl font-bold'>{totalUnavailableGuilds > 0 ? totalUnavailableGuilds.toLocaleString() : '0'}</CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
       </section>
 
+      <hr />
+
       {/* --- GATEWAY SECTION --- */}
-      <section className='space-y-6'>
-        <div className='flex items-center gap-2 text-blue-500 mb-4'>
-          <WaypointsIcon className='w-6 h-6' />
+      <section className='space-y-4'>
+        <div className='flex items-center gap-2'>
+          <WaypointsIcon className='size-6 shrink-0 text-blue-500' />
           <h2 className='text-2xl font-bold'>Gateway Infrastructure</h2>
         </div>
 
         {Object.entries(groupByHost(gateways)).map(([host, hostNodes]) => (
-          <div key={host} className='border rounded-xl bg-card p-6 shadow-sm border-neutral-800'>
-            <div className='flex items-center gap-2 mb-6 text-neutral-400'>
-              <ServerIcon className='w-4 h-4' />
-              <span className='text-sm font-mono uppercase tracking-widest'>{host}</span>
-            </div>
-
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+          <Card key={host}>
+            <CardHeader className='text-muted-foreground flex items-center gap-2'>
+              <ServerIcon className='size-4 shrink-0' />
+              <CardTitle className='font-mono text-sm tracking-widest uppercase'>{host}</CardTitle>
+            </CardHeader>
+            <CardContent className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4'>
               {hostNodes.map((node) => (
                 <NodeCard key={node._id} node={node} now={now} />
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ))}
       </section>
 
-      <hr className='border-neutral-800' />
+      <hr />
 
       {/* --- WORKER SECTION --- */}
-      <section className='space-y-6'>
-        <div className='flex items-center gap-2 text-purple-500 mb-4'>
-          <BoxIcon className='w-6 h-6' />
+      <section className='space-y-4'>
+        <div className='flex items-center gap-2'>
+          <BoxIcon className='size-6 shrink-0 text-purple-500' />
           <h2 className='text-2xl font-bold'>Worker Fleet</h2>
         </div>
 
         {Object.entries(groupByHost(workers)).map(([host, hostNodes]) => (
-          <div key={host} className='border rounded-xl bg-card p-6 shadow-sm border-neutral-800'>
-            <div className='flex items-center gap-2 mb-6 text-neutral-400'>
-              <ServerIcon className='w-4 h-4' />
-              <span className='text-sm font-mono uppercase tracking-widest'>{host}</span>
-            </div>
+          <Card key={host}>
+            <CardHeader className='text-muted-foreground flex items-center gap-2'>
+              <ServerIcon className='size-4 shrink-0' />
+              <CardTitle className='font-mono text-sm tracking-widest uppercase'>{host}</CardTitle>
+            </CardHeader>
 
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+            <CardContent className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'>
               {hostNodes.map((node) => (
                 <NodeCard key={node._id} node={node} now={now} />
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ))}
       </section>
-    </div>
+    </main>
   );
 }
 
@@ -182,92 +259,93 @@ function NodeCard({ node, now }: { node: Doc<'nodes'>; now: number }) {
   const eps = node.type === 'gateway' ? node.shardData?.reduce((sum, shard) => sum + (shard.eventsPerSecond || 0), 0) || 0 : node.eventsPerSecond || 0;
 
   return (
-    <div className='border border-neutral-800 rounded-lg p-4 bg-neutral-900/50 flex flex-col gap-4'>
+    <Card className='bg-accent/40'>
       {/* Header */}
-      <div className='flex justify-between items-start sm:flex-row flex-col-reverse gap-2'>
-        <span className='font-mono text-xs text-neutral-400'>{node.nodeId}</span>
-        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${status.color}`}>{status.label}</span>
-      </div>
+      <CardHeader>
+        <CardTitle className='font-mono text-xs'>{node.nodeId}</CardTitle>
+        <CardAction>
+          <Badge variant={status === 'online' ? 'success' : status === 'offline' ? 'destructive' : 'warning'} className='uppercase'>
+            {status}
+          </Badge>
+        </CardAction>
+      </CardHeader>
 
-      <div className='flex flex-col gap-2 text-xs'>
-        {/* Row 1: Events & EPS (Combined) */}
-        <div className='flex items-center justify-between'>
-          <div className='flex items-center gap-2 text-neutral-500' title='Total Events'>
-            <ChartBarIcon className='w-3 h-3' />
-            <span className='font-mono'>{totalEvents.toLocaleString()}</span>
+      <CardContent>
+        <div className='flex flex-col gap-2 text-xs'>
+          {/* Row 1: Events & EPS (Combined) */}
+          <div className='flex items-center justify-between'>
+            <div className='text-muted-foreground flex items-center gap-2' title='Total Events'>
+              <ChartBarIcon className='size-4 shrink-0' />
+              <span className='font-mono'>{totalEvents.toLocaleString()}</span>
+            </div>
+            <div className='text-muted-foreground flex items-center gap-2' title='Events Per Second'>
+              <span className='font-mono'>{eps > 0 ? eps.toFixed(2) : '0'} / s</span>
+              <RadioIcon className='size-4 shrink-0' />
+            </div>
           </div>
-          <div className='flex items-center gap-2 text-neutral-500' title='Events Per Second'>
-            <span className='font-mono'>{eps > 0 ? eps.toFixed(2) : '0'} / s</span>
-            <RadioIcon className='w-3 h-3' />
-          </div>
-        </div>
 
-        {/* Row 2: Latency & Memory */}
-        <div className='grid grid-cols-2 gap-y-2'>
-          <div className='flex items-center gap-2 text-neutral-500' title='Average Latency'>
+          {/* Row 2: Latency & Memory */}
+          <div className='grid grid-cols-2 gap-y-2'>
+            <div className='text-muted-foreground flex items-center gap-2' title='Average Latency'>
+              {node.type === 'gateway' && (
+                <>
+                  <SignalIcon className='size-4 shrink-0' />
+                  <span className='font-mono'>
+                    {node.shardData?.length ? `${Math.round(node.shardData.reduce((sum, s) => sum + s.ping, 0) / node.shardData.length)}ms` : 'N/A'}
+                  </span>
+                </>
+              )}
+            </div>
+            <div className='text-muted-foreground flex items-center gap-2 justify-self-end' title='Memory Usage'>
+              <span className='font-mono'>{node.memoryUsage.toLocaleString()} MB</span>
+              <MemoryStickIcon className='size-4 shrink-0' />
+            </div>
+
+            {/* Row 3: Uptime & Last Seen */}
+            <div className='text-muted-foreground flex items-center gap-2' title='Uptime'>
+              <ClockIcon className='size-4 shrink-0' />
+              <span className='font-mono'>{uptimeStr}</span>
+            </div>
+            <div className='text-muted-foreground flex items-center gap-2 justify-self-end' title='Last Heartbeat'>
+              <span className='font-mono'>{lastSeenStr}</span>
+              <ActivityIcon className='size-4 shrink-0' />
+            </div>
+
+            {/* Row 4: Gateway Guild Stats */}
             {node.type === 'gateway' && (
               <>
-                <SignalIcon className='w-3 h-3' />
-                <span className='font-mono'>
-                  {node.shardData?.length ? `${Math.round(node.shardData.reduce((sum, s) => sum + s.ping, 0) / node.shardData.length)}ms` : 'N/A'}
-                </span>
+                <div className='text-muted-foreground flex items-center gap-2' title='Total Active Guilds'>
+                  <GlobeIcon className='size-4 shrink-0' />
+                  <span className='font-mono'>{node.shardData?.reduce((sum, shard) => sum + shard.activeGuildIds.length, 0).toLocaleString()}</span>
+                </div>
+                <div className='text-muted-foreground flex items-center gap-2 justify-self-end' title='Total Unavailable Guilds'>
+                  <span className='font-mono'>{node.shardData?.reduce((sum, shard) => sum + shard.unavailableGuildIds.length, 0).toLocaleString()}</span>
+                  <GlobeOffIcon className='size-4 shrink-0' />
+                </div>
               </>
             )}
           </div>
-          <div className='flex items-center gap-2 text-neutral-500 justify-self-end' title='Memory Usage'>
-            <span className='font-mono'>{node.memoryUsage.toLocaleString()} MB</span>
-            <MemoryStickIcon className='w-3 h-3' />
-          </div>
-
-          {/* Row 3: Uptime & Last Seen */}
-          <div className='flex items-center gap-2 text-neutral-500' title='Uptime'>
-            <ClockIcon className='w-3 h-3' />
-            <span className='font-mono'>{uptimeStr}</span>
-          </div>
-          <div className='flex items-center gap-2 text-neutral-500 justify-self-end' title='Last Heartbeat'>
-            <span className='font-mono'>{lastSeenStr}</span>
-            <ActivityIcon className='w-3 h-3' />
-          </div>
-
-          {/* Row 4: Gateway Guild Stats */}
-          {node.type === 'gateway' && (
-            <>
-              <div className='flex items-center gap-2 text-neutral-500' title='Total Active Guilds'>
-                <GlobeIcon className='w-3 h-3' />
-                <span className='font-mono'>{node.shardData?.reduce((sum, shard) => sum + shard.activeGuildIds.length, 0).toLocaleString()}</span>
-              </div>
-              <div className='flex items-center gap-2 text-neutral-500 justify-self-end' title='Total Unavailable Guilds'>
-                <span className='font-mono'>{node.shardData?.reduce((sum, shard) => sum + shard.unavailableGuildIds.length, 0).toLocaleString()}</span>
-                <GlobeOffIcon className='w-3 h-3' />
-              </div>
-            </>
-          )}
         </div>
-      </div>
 
-      {/* Shards Footer */}
-      {node.type === 'gateway' && node.shardData && (
-        <div className='pt-3 border-t border-neutral-800'>
-          <div className='flex flex-wrap gap-1'>
-            {node.shardData.map((shard) => (
-              <div
-                key={shard.id}
-                title={
-                  `Shard ${shard.id}\n` +
-                  `Ping: ${shard.ping > 0 ? shard.ping : 'N/A'} ms\n` +
-                  `Total Events: ${shard.totalEvents.toLocaleString()}\n` +
-                  `Events/s: ${shard.eventsPerSecond?.toFixed(2) || '0'}\n` +
-                  `Active Guilds: ${shard.activeGuildIds.length.toLocaleString()}\n` +
-                  `Unavailable Guilds: ${shard.unavailableGuildIds.length.toLocaleString()}`
-                }
-                className='w-5 h-5 flex items-center justify-center bg-blue-500/20 text-blue-400 text-xs rounded font-mono border border-blue-500/20'
-              >
-                {shard.id}
-              </div>
-            ))}
+        {/* Shards Footer */}
+        {node.type === 'gateway' && node.shardData && (
+          <div>
+            <hr className='my-4' />
+            <div className='flex flex-wrap gap-1'>
+              {node.shardData.map((shard) => (
+                <Tooltip key={shard.id}>
+                  <TooltipTrigger className='bg-accent text-primary flex size-10 shrink-0 items-center justify-center rounded border font-mono text-xs'>
+                    {shard.id}
+                  </TooltipTrigger>
+                  <TooltipContent className='text-center whitespace-pre-line'>
+                    <p>{`Shard ${shard.id}\nPing: ${shard.ping > 0 ? shard.ping : 'N/A'} ms\nTotal Events: ${shard.totalEvents.toLocaleString()}\nEvents per second: ${shard.eventsPerSecond?.toFixed(2) || '0'}\nActive Guilds: ${shard.activeGuildIds.length.toLocaleString()}\nUnavailable Guilds: ${shard.unavailableGuildIds.length.toLocaleString()}`}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
