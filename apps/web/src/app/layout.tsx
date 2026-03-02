@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 
-import { ConvexClientProvider } from '@/components/ConvexClientProvider';
-import { ThemeProvider } from '@/components/theme/provider';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { ConvexClientProvider } from '@/providers/convex';
+import { ThemeProvider } from '@/providers/theme';
 
 import './globals.css';
 
@@ -30,7 +31,9 @@ export default function RootLayout({
     <html lang='en' suppressHydrationWarning>
       <body className={`${interSans.variable} ${jetbrainsMono.variable} antialiased`}>
         <ThemeProvider attribute='class' defaultTheme='system' enableSystem disableTransitionOnChange>
-          <ConvexClientProvider>{children}</ConvexClientProvider>
+          <ConvexClientProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </ConvexClientProvider>
         </ThemeProvider>
       </body>
     </html>
