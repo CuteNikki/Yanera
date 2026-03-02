@@ -1,8 +1,33 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { auth } from '@/auth';
+
 import { getBotGuilds, getUserGuilds } from '@/lib/discord';
+import { cn, getGuildIconUrl } from '@/lib/utils';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+export function getDeterministicColor(id: string) {
+  const colors = [
+    'bg-blue-600',
+    'bg-indigo-600',
+    'bg-purple-600',
+    'bg-fuchsia-600',
+    'bg-pink-600',
+    'bg-rose-600',
+    'bg-orange-600',
+    'bg-amber-600',
+    'bg-emerald-600',
+    'bg-teal-600',
+  ];
+
+  const charSum = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[charSum % colors.length];
+}
 
 export default async function Dashboard() {
   const session = await auth();
@@ -59,65 +84,68 @@ export default async function Dashboard() {
     });
 
   return (
-    <main className='p-8 mx-auto container'>
-      <header className='flex justify-between items-center mb-8'>
+    <main className='container mx-auto p-8'>
+      <header className='mb-8 flex items-center justify-between'>
         <h1 className='text-3xl font-bold'>Your Servers</h1>
       </header>
 
-      <div className='grid lg:grid-cols-2 2xl:grid-cols-3 gap-4 w-full'>
+      <div className='grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'>
         {processedGuilds.map((guild) => (
-          <div key={guild.id} className='p-4 border border-foreground/10 rounded-lg flex items-center justify-between gap-3 min-w-0'>
-            <div className='flex items-center gap-3 min-w-0 flex-1'>
-              <div className='shrink-0'>
-                {guild.icon ? (
-                  <Image
-                    src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${guild.icon.startsWith('a_') ? 'gif' : 'png'}?size=64`}
-                    alt={guild.name}
-                    width={50}
-                    height={50}
-                    className='rounded-lg h-12 w-12 object-cover'
-                  />
-                ) : (
-                  <div className='w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold shrink-0'>
-                    {guild.name
-                      .replace(/'s /g, ' ')
-                      .replace(/\w+/g, (e) => e[0])
-                      .replace(/\s/g, '')}
-                  </div>
-                )}
-              </div>
-
-              <div className='flex flex-col min-w-0 flex-1'>
-                <span className='font-semibold truncate block w-full text-base'>{guild.name}</span>
-                <div className='block space-x-1.5 text-xs text-gray-400 truncate w-full'>
-                  <span className=''>{guild.isOwner ? 'Owner' : guild.isAdmin ? 'Admin' : guild.canManage ? 'Staff' : 'User'}</span>
-                  <span>•</span>
-                  <span>{guild.botPresent ? 'Mutual Server' : 'Not Mutual'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className='shrink-0 ml-auto'>
-              {guild.canManage && guild.botPresent && (
-                <a href={`/dashboard/${guild.id}`} className='bg-green-600 px-3 py-1.5 text-sm rounded hover:bg-green-700 transition whitespace-nowrap'>
-                  Edit
-                </a>
-              )}
-              {guild.canManage && !guild.botPresent && (
-                <a
-                  href={`https://discord.com/oauth2/authorize?client_id=${process.env.AUTH_DISCORD_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}&redirect_uri=${encodeURIComponent(`http://localhost:3000/dashboard`)}&response_type=code`}
-                  className='bg-indigo-500 px-3 py-1.5 text-sm rounded hover:bg-indigo-600 transition whitespace-nowrap'
+          <Card key={guild.id} className='relative pt-0'>
+            <div className='bg-background relative aspect-16/12 w-full overflow-hidden border-b'>
+              {guild.icon ? (
+                <Image
+                  unoptimized
+                  width={256}
+                  height={256}
+                  src={getGuildIconUrl(guild.id, guild.icon, 256)}
+                  alt={guild.name}
+                  className='h-full w-full object-cover'
+                />
+              ) : (
+                <div
+                  className={cn('flex h-full w-full items-center justify-center text-center text-2xl font-black select-none', getDeterministicColor(guild.id))}
                 >
-                  Add Bot
-                </a>
-              )}
-              {!guild.canManage && guild.botPresent && (
-                <a href={`/dashboard/${guild.id}`} className='bg-gray-500 px-3 py-1.5 text-sm rounded hover:bg-gray-600 transition whitespace-nowrap'>
-                  View
-                </a>
+                  {guild.name
+                    .replace(/'s /g, ' ')
+                    .replace(/\w+/g, (word) => word[0])
+                    .replace(/\s/g, '')
+                    .slice(0, 10)}
+                </div>
               )}
             </div>
-          </div>
+            <CardHeader>
+              <CardTitle className='truncate' title={guild.name}>
+                {guild.name}
+              </CardTitle>
+              <CardDescription className='flex flex-row gap-1 truncate'>
+                <Badge variant='secondary'>{guild.isOwner ? 'Owner' : guild.isAdmin ? 'Admin' : guild.canManage ? 'Manageable' : 'User'}</Badge>
+                {guild.botPresent && <Badge variant='secondary'>Mutual</Badge>}
+              </CardDescription>
+
+              <CardAction>
+                {guild.canManage && guild.botPresent && (
+                  <Button variant='default' size='lg' title='Edit Guild Settings' asChild>
+                    <Link href={`/dashboard/${guild.id}`}>Edit</Link>
+                  </Button>
+                )}
+                {guild.canManage && !guild.botPresent && (
+                  <Button variant='default' size='lg' title='Add Bot' asChild>
+                    <Link
+                      href={`https://discord.com/oauth2/authorize?client_id=${process.env.AUTH_DISCORD_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}&redirect_uri=${encodeURIComponent(`http://localhost:3000/dashboard`)}&response_type=code`}
+                    >
+                      Setup
+                    </Link>
+                  </Button>
+                )}
+                {!guild.canManage && guild.botPresent && (
+                  <Button variant='default' size='lg' title='View Dashboard' asChild>
+                    <Link href={`/dashboard/${guild.id}`}>View</Link>
+                  </Button>
+                )}
+              </CardAction>
+            </CardHeader>
+          </Card>
         ))}
       </div>
     </main>
