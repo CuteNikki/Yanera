@@ -25,21 +25,14 @@ export const getUserAvatarUrl = (userId: string, discriminator: string, avatarHa
   }
 };
 
-export const getUserBannerUrl = (userId: string, bannerHash: string | null, size: number = 64): string | null => {
-  if (!bannerHash) {
-    return null;
-  }
+export const getUserBannerUrl = (userId: string, bannerHash: string, size: number = 64) => {
 
   const isAnimated = bannerHash.startsWith('a_');
   const format = isAnimated ? 'gif' : 'webp';
   return `https://cdn.discordapp.com/banners/${userId}/${bannerHash}.${format}?size=${size}`;
 };
 
-export const getGuildIconUrl = (guildId: string, hash: string, size: number = 64): string | null => {
-  if (!hash) {
-    return null;
-  }
-
+export const getGuildIconUrl = (guildId: string, hash: string, size: number = 64) => {
   const isAnimated = hash.startsWith('a_');
   const format = isAnimated ? 'gif' : 'webp';
 
