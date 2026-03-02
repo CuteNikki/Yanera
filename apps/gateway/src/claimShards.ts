@@ -44,7 +44,7 @@ export async function claimShards(redis: ExactRedisClient, token: string, nodeId
 
       const acquired = await redis.set(lockKey, nodeId, {
         NX: true,
-        EX: 30,
+        EX: 20,
       });
 
       if (acquired) {
@@ -59,7 +59,7 @@ export async function claimShards(redis: ExactRedisClient, token: string, nodeId
         console.log(`[Coordinator] Claimed Chunk ${chunkId} (Shards: ${startShard} to ${endShard})`);
 
         const renewLock = async () => {
-          await redis.set(lockKey, nodeId, { EX: 30 });
+          await redis.set(lockKey, nodeId, { EX: 20 });
         };
 
         return { shards, renewLock };
