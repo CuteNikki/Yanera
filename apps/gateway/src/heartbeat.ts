@@ -7,7 +7,7 @@ const STARTED_AT = Date.now();
 
 const lastShardEventCounts = new Map<number, number>();
 
-export function startGatewayHeartbeat(
+export async function startGatewayHeartbeat(
   manager: WebSocketManager,
   shardPings: Map<number, number>,
   shardEvents: Map<number, number>,
@@ -16,7 +16,7 @@ export function startGatewayHeartbeat(
   nodeId: string,
   hostName: string,
   renewLock: () => Promise<void>,
-) {
+) { 
   console.log(`[Heartbeat] Starting heartbeat for ${nodeId} on ${hostName}`);
 
   setInterval(async () => {

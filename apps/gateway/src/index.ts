@@ -77,7 +77,6 @@ manager.on(WebSocketShardEvents.Dispatch, async (event, shardId) => {
   });
 });
 
+await startGatewayHeartbeat(manager, shardPings, shardEvents, activeGuildIds, unavailableGuildIds, NODE_ID, HOST_NAME, renewLock);
 await manager.connect();
 console.log(`[Gateway] ${NODE_ID} is online and listening for shards: ${claimedShards.join(', ')}`);
-
-startGatewayHeartbeat(manager, shardPings, shardEvents, activeGuildIds, unavailableGuildIds, NODE_ID, HOST_NAME, renewLock);
