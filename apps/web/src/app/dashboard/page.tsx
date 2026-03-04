@@ -132,6 +132,7 @@ export default async function Dashboard() {
                 {guild.canManage && !guild.botPresent && (
                   <Button variant='default' size='lg' title='Add Bot' asChild>
                     <Link
+                      // @todo: Update redirect_uri to production URL in .env when deploying
                       href={`https://discord.com/oauth2/authorize?client_id=${process.env.AUTH_DISCORD_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}&redirect_uri=${encodeURIComponent(`http://localhost:3000/dashboard`)}&response_type=code`}
                     >
                       Setup
