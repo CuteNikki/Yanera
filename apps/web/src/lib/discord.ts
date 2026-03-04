@@ -56,7 +56,6 @@ enum PremiumType {
   NitroBasic = 3,
 }
 
-// User Flags
 export enum UserFlags {
   None = 0,
   DiscordEmployee = 1 << 0,
