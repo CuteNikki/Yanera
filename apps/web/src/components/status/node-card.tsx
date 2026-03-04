@@ -66,7 +66,7 @@ export function StatusNodeCard({ node, highlightedShardId, now }: StatusNodeCard
   return (
     <Card
       className={cn(
-        'h-fit transition-colors [content-visibility:auto]',
+        'h-fit transition-colors bg-accent/30 [content-visibility:auto]',
         status === 'offline' && 'bg-red-500/3 ring-1 ring-red-500/30',
         status === 'unresponsive' && 'bg-yellow-500/5 ring-1 ring-yellow-500/30',
       )}
@@ -159,16 +159,16 @@ export function StatusNodeCard({ node, highlightedShardId, now }: StatusNodeCard
                           ref={isHighlighted ? highlightRef : undefined}
                           className={cn(
                             'flex flex-col items-center justify-center rounded border p-1 text-center transition-all',
-                            isHighlighted ? 'shard-highlight' : 'bg-accent',
+                            isHighlighted ? 'shard-highlight' : 'bg-accent/50',
                           )}
                         >
                           <span className='text-foreground font-mono text-sm font-medium'>{shard.id}</span>
-                          <span className='text-muted-foreground flex items-center gap-0.5 text-[10px]'>{shard.ping} ms</span>
-                          <span className='text-muted-foreground flex items-center gap-0.5 text-[10px]'>{shard.eventsPerSecond} e/s</span>
+                          <span className='text-muted-foreground text-xs'>{shard.ping} ms</span>
+                          <span className='text-muted-foreground text-xs'>{shard.eventsPerSecond} e/s</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <div className='space-y-1 text-xs'>
+                        <div className='flex flex-col text-xs'>
                           <div className='font-medium'>Shard {shard.id}</div>
                           <div>Ping: {shard.ping} ms</div>
                           <div>Events per Second: {shard.eventsPerSecond?.toLocaleString()}</div>
