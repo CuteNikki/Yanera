@@ -48,7 +48,7 @@ export function StatusFilters({
   return (
     <section className='flex flex-col gap-2'>
       <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-        <h2 className='text-muted-foreground text-sm font-medium tracking-wider uppercase'>Hosts & Nodes</h2>
+        <h2 className='text-muted-foreground text-sm font-medium uppercase'>Hosts & Nodes</h2>
 
         <div className='relative'>
           <SearchIcon className='text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2' />

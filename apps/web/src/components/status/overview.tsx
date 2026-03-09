@@ -105,7 +105,7 @@ export function StatusOverview({ nodes }: { nodes: Doc<'nodes'>[] }) {
 
   return (
     <section>
-      <h2 className='text-muted-foreground mb-4 text-sm font-medium tracking-wider uppercase'>Overview</h2>
+      <h2 className='text-muted-foreground mb-4 text-sm font-medium uppercase'>Overview</h2>
       <div className='grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5'>
         <StatusOverviewCard
           rawNumber={stats.totalHosts}
