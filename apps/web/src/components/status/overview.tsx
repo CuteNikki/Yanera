@@ -44,8 +44,8 @@ export function StatusOverview({ nodes }: { nodes: Doc<'nodes'>[] }) {
     let gatewayCount = 0;
     let workerCount = 0;
 
-    let totalGuilds = 0;
-    let totalUnavailableGuilds = 0;
+    let totalGuilds = null;
+    let totalUnavailableGuilds = null;
 
     let totalEps = 0;
     let totalEventsProcessed = 0;
@@ -69,8 +69,8 @@ export function StatusOverview({ nodes }: { nodes: Doc<'nodes'>[] }) {
           let hasPing = false;
 
           for (const shard of node.shardData) {
-            totalGuilds += shard.activeGuildIds.length;
-            totalUnavailableGuilds += shard.unavailableGuildIds.length;
+            totalGuilds = (totalGuilds || 0) + shard.activeGuildIds.length;
+            totalUnavailableGuilds = (totalUnavailableGuilds || 0) + shard.unavailableGuildIds.length;
 
             if (shard.ping > 0) {
               pingSum += shard.ping;
@@ -109,19 +109,19 @@ export function StatusOverview({ nodes }: { nodes: Doc<'nodes'>[] }) {
       <div className='grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5'>
         <StatusOverviewCard
           rawNumber={stats.totalHosts}
-          formattedNumber={stats.totalHosts > 0 ? stats.totalHosts.toLocaleString() : 'N/A'}
+          formattedNumber={stats.totalHosts >= 0 ? stats.totalHosts.toLocaleString() : 'N/A'}
           label='Total Hosts'
           Icon={ServerIcon}
         />
         <StatusOverviewCard
           rawNumber={stats.gatewayCount}
-          formattedNumber={stats.gatewayCount > 0 ? stats.gatewayCount.toLocaleString() : 'N/A'}
+          formattedNumber={stats.gatewayCount >= 0 ? stats.gatewayCount.toLocaleString() : 'N/A'}
           label='Total Gateways'
           Icon={RadioIcon}
         />
         <StatusOverviewCard
           rawNumber={stats.workerCount}
-          formattedNumber={stats.workerCount > 0 ? stats.workerCount.toLocaleString() : 'N/A'}
+          formattedNumber={stats.workerCount >= 0 ? stats.workerCount.toLocaleString() : 'N/A'}
           label='Total Workers'
           Icon={CpuIcon}
         />
@@ -146,27 +146,27 @@ export function StatusOverview({ nodes }: { nodes: Doc<'nodes'>[] }) {
         <StatusOverviewCard
           rawNumber={stats.totalEventsProcessed}
           formattedNumber={
-            stats.totalEventsProcessed > 0 ? stats.totalEventsProcessed.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 2 }) : 'N/A'
+            stats.totalEventsProcessed >= 0 ? stats.totalEventsProcessed.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 2 }) : 'N/A'
           }
           label='Events Processed'
           Icon={HashIcon}
         />
         <StatusOverviewCard
           rawNumber={stats.globalEps}
-          formattedNumber={stats.globalEps > 0 ? stats.globalEps.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 1 }) : 'N/A'}
+          formattedNumber={stats.globalEps >= 0 ? stats.globalEps.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 1 }) : 'N/A'}
           label='Events per Second'
           Icon={ZapIcon}
         />
         <StatusOverviewCard
-          rawNumber={stats.totalGuilds}
-          formattedNumber={stats.totalGuilds > 0 ? stats.totalGuilds.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 2 }) : 'N/A'}
+          rawNumber={stats.totalGuilds ?? 0}
+          formattedNumber={stats.totalGuilds ? stats.totalGuilds.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 2 }) : 'N/A'}
           label='Total Guilds'
           Icon={GlobeIcon}
         />
         <StatusOverviewCard
-          rawNumber={stats.totalUnavailableGuilds}
+          rawNumber={stats.totalUnavailableGuilds ?? 0}
           formattedNumber={
-            stats.totalUnavailableGuilds > 0 ? stats.totalUnavailableGuilds.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 2 }) : '0'
+            stats.totalUnavailableGuilds ? stats.totalUnavailableGuilds.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 2 }) : 'N/A'
           }
           label='Unavailable Guilds'
           Icon={GlobeOffIcon}

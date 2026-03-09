@@ -97,12 +97,12 @@ export function StatusHostGroup({ hostName, nodes, now, highlightedShardId }: St
             <div className='flex items-center gap-1'>
               <ZapIcon className='size-4 shrink-0' />
               <span className='tabular-nums'>
-                {stats.totalEps > 0 ? stats.totalEps.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 2 }) : 'N/A'}
+                {stats.totalEps ? stats.totalEps.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 2 }) : 0} / s
               </span>
             </div>
             <div className='flex items-center gap-1'>
               <SignalIcon className='size-4 shrink-0' />
-              <span className='tabular-nums'>{stats.avgPing} ms</span>
+              <span className='tabular-nums'>{stats.avgPing > 0 ? `${stats.avgPing} ms` : 'N/A'}</span>
             </div>
             <div className='flex items-center gap-1'>
               <MemoryStickIcon className='size-4 shrink-0' />

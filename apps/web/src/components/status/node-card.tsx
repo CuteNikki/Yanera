@@ -90,12 +90,12 @@ export function StatusNodeCard({ node, highlightedShardId, now }: StatusNodeCard
             </div>
             <div className='flex items-center gap-1'>
               <ZapIcon className='size-4 shrink-0' />
-              <span className='tabular-nums'>{stats.eps > 0 ? `${formatCompact(stats.eps)} / s` : 'N/A'}</span>
+              <span className='tabular-nums'>{stats.eps ? formatCompact(stats.eps) : 0} / s</span>
             </div>
             {isGateway && stats.ping > 0 && (
               <div className='flex items-center gap-1'>
                 <SignalIcon className='size-4 shrink-0' />
-                <span className='tabular-nums'>{stats.ping} ms</span>
+                <span className='tabular-nums'>{stats.ping > 0 ? `${stats.ping} ms` : 'N/A'}</span>
               </div>
             )}
           </CardDescription>
@@ -106,7 +106,7 @@ export function StatusNodeCard({ node, highlightedShardId, now }: StatusNodeCard
       {isExpanded && (
         <div className='border-t px-4 pt-4'>
           <div className='flex flex-col gap-4'>
-            <div className='grid grid-cols-2 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-5 gap-4 text-xs'>
+            <div className='xs:grid-cols-4 grid grid-cols-2 gap-4 text-xs sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-5'>
               <div className='space-y-1'>
                 <span className='text-muted-foreground'>Uptime</span>
                 <div className='text-foreground font-medium'>{uptime}</div>
@@ -117,11 +117,11 @@ export function StatusNodeCard({ node, highlightedShardId, now }: StatusNodeCard
               </div>
               <div className='space-y-1'>
                 <span className='text-muted-foreground'>Events/s</span>
-                <div className='text-foreground font-medium'>{stats.eps > 0 ? formatCompact(stats.eps) : 'N/A'}</div>
+                <div className='text-foreground font-medium'>{stats.eps ? formatCompact(stats.eps) : 0} / s</div>
               </div>
               <div className='space-y-1'>
                 <span className='text-muted-foreground'>Total Events</span>
-                <div className='text-foreground font-medium'>{stats.totalEvents > 0 ? formatCompact(stats.totalEvents) : '0'}</div>
+                <div className='text-foreground font-medium'>{stats.totalEvents >= 0 ? formatCompact(stats.totalEvents) : 'N/A'}</div>
               </div>
               <div className='space-y-1'>
                 <span className='text-muted-foreground'>Memory Usage</span>
@@ -141,7 +141,7 @@ export function StatusNodeCard({ node, highlightedShardId, now }: StatusNodeCard
                   </div>
                   <div className='space-y-1'>
                     <span className='text-muted-foreground'>Latency</span>
-                    <div className='text-foreground font-medium'>{stats.ping} ms</div>
+                    <div className='text-foreground font-medium'>{stats.ping > 0 ? `${stats.ping} ms` : 'N/A'}</div>
                   </div>
                 </>
               )}
@@ -163,18 +163,18 @@ export function StatusNodeCard({ node, highlightedShardId, now }: StatusNodeCard
                           )}
                         >
                           <span className='text-foreground font-mono text-sm font-medium'>{shard.id}</span>
-                          <span className='text-muted-foreground text-xs'>{shard.ping} ms</span>
-                          <span className='text-muted-foreground text-xs'>{shard.eventsPerSecond} e/s</span>
+                          <span className='text-muted-foreground text-xs'>{shard.ping > 0 ? `${shard.ping} ms` : 'N/A'}</span>
+                          <span className='text-muted-foreground text-xs'>{(shard.eventsPerSecond ?? 0) >= 0 ? `${shard.eventsPerSecond} e/s` : 'N/A'}</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
                         <div className='flex flex-col text-xs'>
                           <div className='font-medium'>Shard {shard.id}</div>
-                          <div>Ping: {shard.ping} ms</div>
-                          <div>Events per Second: {shard.eventsPerSecond?.toLocaleString()}</div>
-                          <div>Total Events: {shard.totalEvents?.toLocaleString()}</div>
-                          <div>Total Guilds: {shard.activeGuildIds.length?.toLocaleString()} active</div>
-                          <div>Guilds Unavailable: {shard.unavailableGuildIds.length?.toLocaleString()}</div>
+                          <div>Ping: {shard.ping > 0 ? `${shard.ping} ms` : 'N/A'}</div>
+                          <div>Events per Second: {(shard.eventsPerSecond ?? 0) >= 0 ? shard.eventsPerSecond?.toLocaleString() : 'N/A'}</div>
+                          <div>Total Events: {shard.totalEvents >= 0 ? shard.totalEvents.toLocaleString() : 'N/A'}</div>
+                          <div>Total Guilds: {shard.activeGuildIds.length >= 0 ? shard.activeGuildIds.length.toLocaleString() : 'N/A'} active</div>
+                          <div>Guilds Unavailable: {shard.unavailableGuildIds.length >= 0 ? shard.unavailableGuildIds.length.toLocaleString() : 'N/A'}</div>
                         </div>
                       </TooltipContent>
                     </Tooltip>
