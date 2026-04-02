@@ -1,15 +1,21 @@
 {
   "name": "gateway",
-  "version": "1.0.0",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
   "scripts": {
-    "dev": "bun run src/index.ts"
+    "start": "bun run src/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
   },
   "dependencies": {
-    "@discordjs/rest": "^2.6.0",
+    "@discordjs/rest": "^2.6.1",
     "@discordjs/ws": "^2.0.4",
-    "@yanera/database": "*",
-    "convex": "^1.32.0",
-    "discord-api-types": "^0.38.40",
-    "redis": "^5.11.0"
+    "discord-api-types": "^0.38.43",
+    "ioredis": "^5.10.1"
   }
 }

@@ -1,20 +1,14 @@
 {
   "name": "yanera",
+  "version": "2.0.0",
   "private": true,
+  "scripts": {
+    "start:worker": "cd apps/worker && bun run start",
+    "start:gateway": "cd apps/gateway && bun run start",
+    "start:all": "bun run start:worker & bun run start:gateway"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
-  ],
-  "scripts": {
-    "dev:web": "cd apps/web && bun run dev",
-    "dev:worker": "cd apps/worker && bun run dev",
-    "dev:register": "cd apps/worker && bun run register",
-    "dev:gateway": "cd apps/gateway && bun run dev",
-    "dev:convex": "cd packages/database && bun run dev",
-    "dev": "concurrently 'bun run dev:convex' 'bun run dev:web' 'bun run dev:gateway' 'bun run dev:worker'"
-  },
-  "devDependencies": {
-    "@types/node": "^25.3.3",
-    "concurrently": "^9.2.1"
-  }
+  ]
 }
